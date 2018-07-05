@@ -1,5 +1,5 @@
 mlbPlayer = read.table(file=file.choose(),
-                       header = T, sep = " ", quote = "",
+                       header = T, sep = " ", quote = "", fill = FALSE,
                        na.strings = "`",
                        stringsAsFactors = F)
 playerData = mlbPlayer[, c("RBI", "AVG")]
