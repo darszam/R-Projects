@@ -67,3 +67,35 @@ barplot(counts, main = "Car Distribution by Cylinders and Gears",
                            cex = 0.8),
         cex.main = 0.8, cex.axis = 0.6,
         cex.names = 0.6, cex.lab = 0.8)
+## grouped dot plot miles per gallon for various cars, grouped by cylinders
+mtcars <- within(mtcars, { color <- ifelse(cyl == 4, "coral", ifelse(cyl == 6, "cadetblue", "darkolivegreen")) })
+dotchart(mtcars$mpg, labels = row.names(mtcars), groups = mtcars$cyl,
+         color = mtcars$color, cex = 0.7, pch = 16,
+         main = "Miles per Gallon of cars\nby Cylinders",
+         xlab = "Miles per Gallon")
+#removing color column within data frame after plot
+mtcars <- within(mtcars, rm("color"))
+
+## using ggplot2
+library(ggplot2)
+theme <- theme_set(theme_minimal())
+ggplot(mtcars, mapping = aes_string(y = "mpg", x = "cyl")) + xlab("Number of Cylinders") + ylab("Miles per Gallon") +
+    ggtitle("Distribution of Miles per Gallon \nby number of cylinders") +
+    geom_boxplot(outlier.colour = NULL,
+        aes_string(colour = "cyl", fill = "cyl"),
+        alpha = 0.8) +
+        stat_summary(geom = "crossbar",
+            width = 0.7,
+            fatten = 0.5,
+            color = "white",
+            fun.data = function(x) {
+                    return(c(y = median(x), ymin = median(x), ymax = median(x)))
+                    }
+) +
+    stat_summary(fun.data = function(x) {
+        return(c(y=median(x)*1.03,label=round(median(x),2)))
+    },
+    geom = "text",
+    fun.y = mean,
+    colour="white")
+
