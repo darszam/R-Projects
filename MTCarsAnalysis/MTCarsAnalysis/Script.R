@@ -98,4 +98,65 @@ ggplot(mtcars, mapping = aes_string(y = "mpg", x = "cyl")) + xlab("Number of Cyl
     geom = "text",
     fun.y = mean,
     colour="white")
+## print avg/median mpg by cylinders
+aggregate(list(mpg = mtcars$mpg),
+    list(cylinders = mtcars$cyl),
+    FUN = function(mpg) {
+        c(avg = mean(mpg),
+          median=median(mpg))
+    }
+    )
+## Car mpgs by transmission type visualization
+ggplot(mtcars,
+    mapping = aes_string(y = "mpg", x = "am")) +
+       xlab("Transmission Type") +
+       ylab("Miles per Gallon") +
+       ggtitle("Distribution of Miles per Gallon \nby transmission type") +
+       geom_boxplot(outlier.colour = NULL,
+                    aes_string(colours = "am",
+                    fill = "am"), alpha = 0.8) +
+                               stat_summary(geom = "crossbar",
+                                            width = 0.7,
+                                            fatten = 0.5,
+                                            color = "white",
+                                            fun.data = function(x) {
+                                                return(c(y = median(x),
+                                                       ymin = median(x),
+                                                       ymax=median(x)))
+                                            }) +
+                                            stat_summary(fun.data = function(x) {
+                                                return(c(y = median(x) * 1.03,
+                                                label = round(median(x),2)))
+                                            },
+                                            geom = "text",
+                                            fun.y = mean,
+                                            colour = "white")
+## print avg/median
+aggregate(list(mpg = mtcars$mpg),
+    list(transmission = mtcars$am),
+    FUN = function(mpg) {
+        c(avg = mean(mpg),
+          median = median(mpg))
+    }
+    )
 
+## Statistical inference
+## Hypothesis 0 -> difference in mpg means for automatic and manual transmission cars is zero
+## Using t-test
+# Viewing data distribution
+ggplot(mtcars, aes(x = mpg)) +
+    geom_density(colour = "steelblue",
+    fill = "lightblue", alpha = 0.8) +
+                 expand_limits(x = 0, y = 0)
+# Now using t-test
+t.test(mpg ~ am, data = mtcars)
+## Visualizing t-test results
+aggr <- aggregate(list(mpg = mtcars$mpg),
+                  list(transmission = mtcars$am),
+                  FUN = function(mpg) { c(avg = mean(mpg)) })
+ggplot(mtcars, aes(x = mpg)) +
+    geom_density(aes(group = am, colour = am, fill = am),
+    alpha = 0.6) +
+                 geom_vline(data = aggr, aes(xintercept = mpg, color = transmission),
+                            linetype = "dashed", size = 1)
+## Statistical modeling with regression
