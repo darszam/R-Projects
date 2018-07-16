@@ -160,3 +160,32 @@ ggplot(mtcars, aes(x = mpg)) +
                  geom_vline(data = aggr, aes(xintercept = mpg, color = transmission),
                             linetype = "dashed", size = 1)
 ## Statistical modeling with regression
+# Preparing datasets
+car.to.predict <- mtcars[15,]
+training.data <- mtcars[-15,]
+# Initial model
+initial_model <- lm(mpg ~ ., data = training.data)
+# Summary of model
+summary(initial_model)
+# Select best model
+best_model <- step(initial_model, direction = "both")
+# Summary of best model
+summary(best_model)
+# Predict MPG
+print(data.frame(car.to.predict = data.matrix(
+list(rownames(car.to.predict),
+car.to.predict[, "mpg"])
+)), row.names = FALSE)
+# Initial model prediction
+predict(initial_model, car.to.predict)
+# Best model prediction
+predict(best_model, car.to.predict)
+# Best model diagnostics, visualizations
+par(mfrow = c(2, 2))
+plot(best_model)
+# Influence points
+influential_points <- dfbetas(best_model)
+tail(sort(influential_points[, 4]), 4)
+# Leverage points
+leverage_points <- hatvalues(best_model)
+tail(sort(leverage_points),4)
