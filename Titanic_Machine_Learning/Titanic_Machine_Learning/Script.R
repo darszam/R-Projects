@@ -76,4 +76,90 @@ fullset$Deck <- factor(sapply(fullset$Cabin, function(x) strsplit(x, NULL)[[1]][
 fullset$Cabin
 #fullset$Deck ## Now instead of "" there is <NA> value
 
-## Next phase - fixing missing values 
+print('')
+## Next phase - fixing missing values
+fullset[c(62, 830), 'Embarked']
+
+print('')
+
+cat(paste('We will infer their values for **embarkment** based on present data that we can imagine may be relevant: 
+**passenger class** and **fare**. We see that they paid $', fullset[c(62, 830), 'Fare'][[1]][1], 'and $', 
+fullset[c(62, 830), 'Fare'][[1]][2], 'respectively and their classes are', fullset[c(62, 830), 'Pclass'][[1]][1],
+'and', fullset[c(62, 830), 'Pclass'][[1]][2], '. So from where did they embark?'))
+
+embarkment_fare <- fullset %>%
+    filter(PassengerId != 62 & PassengerId != 830)
+
+# ggplot2
+ggplot(embarkment_fare, aes(x = Embarked, y = Fare, fill = factor(Pclass))) +
+    geom_boxplot() +
+    geom_hline(aes(yintercept = 80),
+    colour = 'red', linetype = 'dashed', lwd = 2) +
+               scale_y_continuous(labels = dollar_format()) +
+               theme_few()
+
+fullset$Embarked[c(62, 830)] <- 'C'
+
+print('')
+fullset[1044,]
+
+ggplot(fullset[fullset$Pclass == '3' & fullset$Embarked == 'S',],
+    aes(x = Fare)) +
+       geom_density(fill = '#99d6ff', alpha = 0.4) +
+       geom_vline(aes(xintercept = median(Fare, na.rm = T)),
+       colour = 'red', linetype = 'dashed', lwd = 1) +
+                  scale_x_continuous(labels = dollar_format()) +
+                  theme_few()
+
+fullset$Fare[1044] <- median(fullset[fullset$Pclass == '3' & fullset$Embarked == 'S',]$Fare, na.rm = TRUE)
+
+# Predictive imputation
+sum(is.na(fullset$Age))
+
+factor_variables <- c('PassengerId', 'Pclass', 'Sex', 'Embarked', 'Title', 'Surname', 'Family', 'FamilySizeDiscretized')
+
+fullset[factor_variables] <- lapply(fullset[factor_variables], function(x) as.factor(x))
+
+set.seed(128)
+
+mice_mod <- mice(fullset[, !names(fullset) %in% c('PassengerId', 'Name', 'Ticket', 'Cabin', 'Family', 'Surname', 'Survived')], method = 'rf')
+
+mice_output <- complete(mice_mod)
+
+# Age distribution
+par(mfrow = c(1, 2))
+hist(fullset$Age, freq = F, main = 'Age: Original Data',
+     col = 'darkgreen', ylim = c(0, 0.04))
+hist(mice_output$Age, freq = F, main = 'Age: Mice Output',
+     col = 'lightgreen', ylim = c(0, 0.4))
+
+# Replacing Age variable from mice model
+fullset$Age <- mice_output$Age
+# Show new number of missing Age values
+sum(is.na(fullset$Age))
+
+# Feature Engineering vol.2
+# plot to check corelation between age and survival
+ggplot(fullset[1:891,], aes(Age, fill = factor(Survived))) +
+    geom_histogram() +
+    facet_grid(. ~ Sex) +
+    theme_few()
+
+# Creating Child variable with values 'Child' and 'Adult'
+fullset$Child[fullset$Age < 18] <- 'Child'
+fullset$Child[fullset$Age >= 18] <- 'Adult'
+
+# Adding Mother variable
+fullset$Mother <- 'Not Mother'
+fullset$Mother[fullset$Sex == 'female' & fullset$Parch > 0 & fullset$Age > 18 & fullset$Title != 'Miss'] <- 'Mother'
+
+# Number of survived mothers and non mothers
+table(fullset$Mother, fullset$Survived)
+
+# Change new variables to factor
+fullset$Child <- factor(fullset$Child)
+fullset$Mother <- factor(fullset$Mother)
+
+md.pattern(fullset)
+
+# Prediction chapter
