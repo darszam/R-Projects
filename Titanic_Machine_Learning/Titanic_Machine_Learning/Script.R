@@ -163,3 +163,35 @@ fullset$Mother <- factor(fullset$Mother)
 md.pattern(fullset)
 
 # Prediction chapter
+trainset <- fullset[1:891,]
+testset <- fullset[892:1309,]
+set.seed(2317)
+
+randomForest_model <- randomForest(factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + Title + FamilySizeDiscretized + Child + Mother, data = trainset)
+
+plot(randomForest_model, ylim = c(0, 0.36))
+legend('topright', colnames(randomForest_model$err.rate), col = 1:3, fill = 1:3)
+
+importance <- importance(randomForest_model)
+varImportance <- data.frame(Variables = row.names(importance),
+                            Importance = round(importance[, 'MeanDecreaseGini'], 2))
+
+rankImportance <- varImportance %>%
+    mutate(Rank = paste0('#', dense_rank(desc(Importance))))
+
+# ggplot2
+
+ggplot(rankImportance, aes(x = reorder(Variables, Importance),
+    y = Importance, fill = Importance)) +
+    geom_bar(stat = 'identity') +
+    geom_text(aes(x = Variables, y = 0.5, label = Rank),
+    hjust = 0, vjust = 0.55, size = 4, colour = 'red') +
+              labs(x = 'Variables') +
+              coord_flip() +
+              theme_few()
+
+# Making prediction
+prediction <- predict(randomForest_model, testset)
+solution_csv <- data.frame(PassengerID = testset$PassengerId, Survived = prediction)
+
+write.csv(solution_csv, file = 'randomforest_model_solution.csv', row.names = F)
